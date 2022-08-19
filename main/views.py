@@ -85,8 +85,12 @@ def create_post(request):
 def sign_up(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
+        group_name = 'default'
         if form.is_valid():
             user = form.save()
+            # add user to default group upon creation
+            default_group, created = Group.objects.get_or_create(name=group_name)
+            user.groups.add(default_group)  # this adds the default group to the user
             login(request, user)
             return redirect('/home')
     else:
