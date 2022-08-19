@@ -6,34 +6,64 @@ from django.contrib.auth.models import User, Group
 from .models import Post
 
 
+# @login_required(login_url="/login")
+# def home(request):
+#     posts = Post.objects.all()
+
+#     if request.method == "POST":
+#         post_id = request.POST.get("post-id")
+#         user_id = request.POST.get("user-id")
+
+#         if post_id:
+#             post = Post.objects.filter(id=post_id).first()
+#             if post and (post.author == request.user or request.user.has_perm("main.delete_post")):
+#                 post.delete()
+#         elif user_id:
+#             user = User.objects.filter(id=user_id).first()
+#             if user and request.user.is_staff:
+#                 try:
+#                     group = Group.objects.get(name='default')
+#                     group.user_set.remove(user)
+#                 except:
+#                     pass
+
+#                 try:
+#                     group = Group.objects.get(name='mod')
+#                     group.user_set.remove(user)
+#                 except:
+#                     pass
+
+#     return render(request, 'main/home.html', {"posts": posts})
+
 @login_required(login_url="/login")
 def home(request):
+
     posts = Post.objects.all()
 
     if request.method == "POST":
+
+        # delete post
         post_id = request.POST.get("post-id")
-        user_id = request.POST.get("user-id")
-
         if post_id:
-            post = Post.objects.filter(id=post_id).first()
-            if post and (post.author == request.user or request.user.has_perm("main.delete_post")):
+            post = Post.objects.get(pk=int(post_id))
+            if post and (
+                post.author == request.user or request.user.has_perm("main.delete_post")
+            ):
                 post.delete()
-        elif user_id:
+
+        # ban user
+        # simpy remove from the groups that has the permissions
+        user_id = request.POST.get("user-id")  
+        if user_id:
             user = User.objects.filter(id=user_id).first()
-            if user and request.user.is_staff:
-                try:
-                    group = Group.objects.get(name='default')
-                    group.user_set.remove(user)
-                except:
-                    pass
+            if user:
+                # you cannot ban staff users
+                if not user.is_staff and request.user.is_staff:
+                    groups = user.groups.all()
+                    for group in groups:
+                        group.user_set.remove(user)
 
-                try:
-                    group = Group.objects.get(name='mod')
-                    group.user_set.remove(user)
-                except:
-                    pass
-
-    return render(request, 'main/home.html', {"posts": posts})
+    return render(request, "main/home.html", {"posts": posts})
 
 
 @login_required(login_url="/login")
